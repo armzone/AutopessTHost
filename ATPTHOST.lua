@@ -10,7 +10,12 @@ local tableRaceDoor = {}
 -- หาตำแหน่งประตูของแต่ละเผ่าใน Workspace
 for _, v in pairs(game.Workspace:GetDescendants()) do
     if string.find(v.Name, "Corridor") then
-        tableRaceDoor[v.Name] = v.Door.Door.RightDoor.Union.CFrame
+        if v:FindFirstChild("Door") and v.Door:FindFirstChild("RightDoor") and v.Door.RightDoor:FindFirstChild("Union") then
+            tableRaceDoor[v.Name] = v.Door.RightDoor.Union.CFrame
+            print("Found door:", v.Name)
+        else
+            warn("Door structure not found for:", v.Name)
+        end
     end
 end
 
@@ -24,16 +29,23 @@ end
 
 -- ฟังก์ชันตรวจสอบว่า Host อยู่ใกล้ประตูของตัวเองหรือไม่
 local function checkHostAtDoor(hostPlayer)
-    if hostPlayer and hostPlayer.Character and hostPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local race = hostPlayer.Data.Race.Value
-        local targetName = race .. "Corridor"
-        local targetCFrame = tableRaceDoor[targetName]
+    if hostPlayer and hostPlayer.Character then
+        local character = hostPlayer.Character or hostPlayer.CharacterAdded:Wait()
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            local race = hostPlayer.Data.Race.Value
+            local targetName = race .. "Corridor"
+            local targetCFrame = tableRaceDoor[targetName]
 
-        if targetCFrame then
-            local distance = (hostPlayer.Character.HumanoidRootPart.Position - targetCFrame.Position).Magnitude
-            return distance < 10 -- ตรวจสอบว่า Host อยู่ใกล้ประตูในระยะ 10 หน่วยหรือไม่
+            if targetCFrame then
+                local distance = (humanoidRootPart.Position - targetCFrame.Position).Magnitude
+                print("Distance from door:", distance)
+                return distance < 10 -- ตรวจสอบว่า Host อยู่ใกล้ประตูในระยะ 10 หน่วยหรือไม่
+            else
+                warn("No door found for the race:", race)
+            end
         else
-            warn("No door found for the race:", race)
+            warn("HumanoidRootPart not found for", hostPlayer.Name)
         end
     end
     return false
@@ -41,9 +53,7 @@ end
 
 -- ฟังก์ชันตรวจสอบว่า Host1 มี ActivationRing หรือไม่
 local function checkForActivationRing(host1)
-    local character = host1.Character
-    if not character then return false end
-
+    local character = host1.Character or host1.CharacterAdded:Wait()
     for _, descendant in pairs(character:GetDescendants()) do
         if descendant:IsA("ParticleEmitter") and descendant.Name == "ActivationRing" then
             return true -- พบ ActivationRing ใน Host1
@@ -54,7 +64,8 @@ end
 
 -- ฟังก์ชันหลักสำหรับ Host1
 local function host1Function()
-    if checkHostAtDoor(LocalPlayer) and checkHostAtDoor(Players:FindFirstChild(_G.Host.Host2[1])) then
+    local host2 = Players:FindFirstChild(_G.Host.Host2[1])
+    if checkHostAtDoor(LocalPlayer) and checkHostAtDoor(host2) then
         pressT()
         print("Host1 pressed T because both Host1 and Host2 are at the door.")
     end
@@ -69,12 +80,12 @@ local function host2Function()
     end
 end
 
--- ลูปหลักที่จะทำงานทุกๆ 5 วินาที
+-- ลูปหลักที่จะทำงานทุกๆ 0.5 วินาที
 while true do
     if table.find(_G.Host.Host1, LocalPlayer.Name) then
         host1Function()
     elseif table.find(_G.Host.Host2, LocalPlayer.Name) then
         host2Function()
     end
-    wait(0.5)  -- รอ 5 วินาทีก่อนที่จะทำการตรวจสอบอีกครั้ง
+    wait(0.5) -- รอ 5 วินาทีก่อนที่จะทำการตรวจสอบอีกครั้ง
 end
