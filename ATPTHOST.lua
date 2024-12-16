@@ -39,17 +39,21 @@ local function checkHostAtDoor(hostPlayer)
     return false
 end
 
--- ฟังก์ชันตรวจสอบว่า Host1 มี ActivationRing หรือไม่
-local function checkForActivationRing(host1)
-    local character = host1.Character
-    if not character then return false end
+-- ติดตาม DescendantAdded เพื่อตรวจสอบ Texture เป้าหมาย
+local function monitorForTargetTexture(host1)
+    local character = host1.Character or host1.CharacterAdded:Wait()
 
-    for _, descendant in pairs(character:GetDescendants()) do
-        if descendant:IsA("ParticleEmitter") and descendant.Name == "ActivationRing" then
-            return true -- พบ ActivationRing ใน Host1
+    character.DescendantAdded:Connect(function(newDescendant)
+        if newDescendant:IsA("ParticleEmitter") and newDescendant.Texture == "http://www.roblox.com/asset/?id=7157487174" then
+            print("Target Texture Detected on Host1!")
+
+            -- Host2 กดปุ่ม T ทันทีเมื่อเงื่อนไขครบ
+            if checkHostAtDoor(LocalPlayer) then
+                pressT()
+                print("Host2 pressed T because Host1 has the target Texture.")
+            end
         end
-    end
-    return false
+    end)
 end
 
 -- ฟังก์ชันหลักสำหรับ Host1
@@ -63,21 +67,20 @@ end
 -- ฟังก์ชันหลักสำหรับ Host2
 local function host2Function()
     local host1 = Players:FindFirstChild(_G.Host.Host1[1])
-    if checkHostAtDoor(LocalPlayer) and host1 and checkForActivationRing(host1) then
-        pressT()
-        print("Host2 pressed T because Host1 has ActivationRing.")
+    if host1 then
+        monitorForTargetTexture(host1)
     end
 end
 
 -- รอ 30 วิก่อนเริ่มทำงาน
 task.wait(30)
 
--- ลูปหลักที่จะทำงานทุกๆ 5 วินาที
+-- ลูปหลัก
 while true do
     if table.find(_G.Host.Host1, LocalPlayer.Name) then
         host1Function()
     elseif table.find(_G.Host.Host2, LocalPlayer.Name) then
         host2Function()
     end
-    wait(0.5)  -- รอ 5 วินาทีก่อนที่จะทำการตรวจสอบอีกครั้ง
+    wait(1) -- ตรวจสอบซ้ำทุก 0.5 วินาที
 end
