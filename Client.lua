@@ -2,21 +2,19 @@ local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
-local texturePlayers = {} -- เก็บผู้เล่นที่มี Texture เป้าหมาย
-local requiredCount = 2 -- จำนวนผู้เล่นที่ต้องการ
-local debounceTime = 1.5 -- เวลาสำหรับการกดซ้ำ
-local lastPressTime = 0 -- เวลาในการกดปุ่ม T ครั้งล่าสุด
+local texturePlayers = {}
+local requiredCount = 2
+local debounceTime = 1.5
+local lastPressTime = 0
 
 -- ฟังก์ชันสำหรับกดปุ่ม T
 local function pressT()
     if tick() - lastPressTime >= debounceTime then
         lastPressTime = tick()
         VirtualInputManager:SendKeyEvent(true, "T", false, game)
-        task.wait()
+        task.wait(0.1)
         VirtualInputManager:SendKeyEvent(false, "T", false, game)
         print("Pressed T because 2 players activated the Texture simultaneously.")
-        
-        -- รีเซ็ตสถานะ
         texturePlayers = {}
     end
 end
@@ -38,39 +36,33 @@ end
 
 -- ฟังก์ชันตรวจสอบ DescendantAdded ของผู้เล่น
 local function monitorForConditions(player)
-    local success, character = pcall(function()
-        return player.Character or player.CharacterAdded:Wait()
-    end)
+    player.CharacterAdded:Connect(function(character)
+        character.DescendantAdded:Connect(function(newDescendant)
+            local success = pcall(function()
+                if newDescendant and isValidTexture(newDescendant) and not texturePlayers[player.Name] then
+                    texturePlayers[player.Name] = true
+                    print(player.Name .. " activated the target Texture!")
 
-    if not success then
-        warn("Error waiting for character: " .. tostring(character))
-        return
-    end
+                    local validCount = 0
+                    for _, _ in pairs(texturePlayers) do
+                        validCount = validCount + 1
+                    end
 
-    character.DescendantAdded:Connect(function(newDescendant)
-        local success = pcall(function()
-            if newDescendant and isValidTexture(newDescendant) and not texturePlayers[player.Name] then
-                -- เพิ่มผู้เล่นลงใน texturePlayers
-                texturePlayers[player.Name] = true
-                print(player.Name .. " activated the target Texture!")
-
-                -- ตรวจสอบจำนวนผู้เล่นที่มี Texture
-                local validCount = 0
-                for _, _ in pairs(texturePlayers) do
-                    validCount = validCount + 1
+                    if validCount == requiredCount then
+                        pressT()
+                    end
                 end
+            end)
 
-                -- กดปุ่ม T ถ้ามีผู้เล่นครบ 2 คน
-                if validCount == requiredCount then
-                    pressT()
-                end
+            if not success then
+                warn("Error in DescendantAdded for player: " .. player.Name)
             end
         end)
-
-        if not success then
-            warn("Error in DescendantAdded for player: " .. player.Name)
-        end
     end)
+
+    if player.Character then
+        monitorForConditions(player)
+    end
 end
 
 -- ฟังก์ชันสำหรับเริ่มต้นตรวจสอบผู้เล่นทั้งหมด
@@ -82,9 +74,7 @@ local function startMonitoring()
     end
 
     Players.PlayerAdded:Connect(function(player)
-        player.CharacterAdded:Connect(function()
-            monitorForConditions(player)
-        end)
+        monitorForConditions(player)
     end)
 end
 
