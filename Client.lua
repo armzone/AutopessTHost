@@ -23,7 +23,10 @@ end
 
 -- ฟังก์ชันเช็ค Texture เป้าหมาย
 local function isValidTexture(descendant)
-    return descendant:IsA("ParticleEmitter") and descendant.Texture == "http://www.roblox.com/asset/?id=7157487174"
+    if descendant and descendant:IsA("ParticleEmitter") then
+        return descendant.Texture == "http://www.roblox.com/asset/?id=7157487174"
+    end
+    return false
 end
 
 -- ฟังก์ชันตรวจสอบ DescendantAdded ของผู้เล่น
@@ -31,7 +34,7 @@ local function monitorForConditions(player)
     local character = player.Character or player.CharacterAdded:Wait()
 
     character.DescendantAdded:Connect(function(newDescendant)
-        if isValidTexture(newDescendant) and not texturePlayers[player.Name] then
+        if newDescendant and isValidTexture(newDescendant) and not texturePlayers[player.Name] then
             -- เพิ่มผู้เล่นลงใน texturePlayers
             texturePlayers[player.Name] = true
             print(player.Name .. " activated the target Texture!")
