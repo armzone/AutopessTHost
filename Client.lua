@@ -36,7 +36,8 @@ end
 
 -- ฟังก์ชันตรวจสอบ DescendantAdded ของผู้เล่น
 local function monitorForConditions(player)
-    player.CharacterAdded:Connect(function(character)
+    local function setupCharacter(character)
+        print("Setting up character for player: " .. player.Name)
         character.DescendantAdded:Connect(function(newDescendant)
             local success = pcall(function()
                 if newDescendant and isValidTexture(newDescendant) and not texturePlayers[player.Name] then
@@ -58,15 +59,20 @@ local function monitorForConditions(player)
                 warn("Error in DescendantAdded for player: " .. player.Name)
             end
         end)
-    end)
+    end
 
     if player.Character then
-        monitorForConditions(player)
+        setupCharacter(player.Character)
     end
+
+    player.CharacterAdded:Connect(function(character)
+        setupCharacter(character)
+    end)
 end
 
 -- ฟังก์ชันสำหรับเริ่มต้นตรวจสอบผู้เล่นทั้งหมด
 local function startMonitoring()
+    print("Starting monitoring for players...")
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             monitorForConditions(player)
@@ -74,6 +80,7 @@ local function startMonitoring()
     end
 
     Players.PlayerAdded:Connect(function(player)
+        print("New player joined: " .. player.Name)
         monitorForConditions(player)
     end)
 end
