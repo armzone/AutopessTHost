@@ -90,6 +90,37 @@ local function monitorForConditions(player)
     end
 end
 
+-- ฟังก์ชันตรวจสอบตำแหน่งผู้เล่นแบบเรียลไทม์
+local function monitorPlayerPositions()
+    task.spawn(function()
+        while true do
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    if isPlayerAtDoor(player) then
+                        texturePlayers[player.Name] = true
+                        print(player.Name .. " is near the door.")
+                    else
+                        texturePlayers[player.Name] = nil
+                    end
+                end
+            end
+
+            -- ตรวจสอบจำนวนผู้เล่นที่มี Texture
+            local validCount = 0
+            for _, _ in pairs(texturePlayers) do
+                validCount = validCount + 1
+            end
+
+            -- กดปุ่ม T ถ้ามีผู้เล่นครบ 2 คน
+            if validCount == requiredCount then
+                pressT()
+            end
+
+            task.wait(1) -- ตรวจสอบทุก ๆ 1 วินาที
+        end
+    end)
+end
+
 -- ฟังก์ชันสำหรับเริ่มต้นตรวจสอบผู้เล่นทั้งหมด
 local function startMonitoring()
     local success = pcall(function()
@@ -104,6 +135,8 @@ local function startMonitoring()
                 monitorForConditions(player)
             end)
         end)
+
+        monitorPlayerPositions() -- เริ่มตรวจสอบตำแหน่งผู้เล่น
     end)
     if not success then
         warn("Error starting monitoring.")
