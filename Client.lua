@@ -23,32 +23,52 @@ end
 
 -- ฟังก์ชันเช็ค Texture เป้าหมาย
 local function isValidTexture(descendant)
-    if descendant and descendant:IsA("ParticleEmitter") then
-        return descendant.Texture == "http://www.roblox.com/asset/?id=7157487174"
+    local success, result = pcall(function()
+        if descendant and descendant:IsA("ParticleEmitter") then
+            return descendant.Texture == "http://www.roblox.com/asset/?id=7157487174"
+        end
+        return false
+    end)
+
+    if not success then
+        warn("Error in isValidTexture: " .. tostring(result))
     end
-    return false
+    return result
 end
 
 -- ฟังก์ชันตรวจสอบ DescendantAdded ของผู้เล่น
 local function monitorForConditions(player)
-    local character = player.Character or player.CharacterAdded:Wait()
+    local success, character = pcall(function()
+        return player.Character or player.CharacterAdded:Wait()
+    end)
+
+    if not success then
+        warn("Error waiting for character: " .. tostring(character))
+        return
+    end
 
     character.DescendantAdded:Connect(function(newDescendant)
-        if newDescendant and isValidTexture(newDescendant) and not texturePlayers[player.Name] then
-            -- เพิ่มผู้เล่นลงใน texturePlayers
-            texturePlayers[player.Name] = true
-            print(player.Name .. " activated the target Texture!")
+        local success = pcall(function()
+            if newDescendant and isValidTexture(newDescendant) and not texturePlayers[player.Name] then
+                -- เพิ่มผู้เล่นลงใน texturePlayers
+                texturePlayers[player.Name] = true
+                print(player.Name .. " activated the target Texture!")
 
-            -- ตรวจสอบจำนวนผู้เล่นที่มี Texture
-            local validCount = 0
-            for _, _ in pairs(texturePlayers) do
-                validCount = validCount + 1
-            end
+                -- ตรวจสอบจำนวนผู้เล่นที่มี Texture
+                local validCount = 0
+                for _, _ in pairs(texturePlayers) do
+                    validCount = validCount + 1
+                end
 
-            -- กดปุ่ม T ถ้ามีผู้เล่นครบ 2 คน
-            if validCount == requiredCount then
-                pressT()
+                -- กดปุ่ม T ถ้ามีผู้เล่นครบ 2 คน
+                if validCount == requiredCount then
+                    pressT()
+                end
             end
+        end)
+
+        if not success then
+            warn("Error in DescendantAdded for player: " .. player.Name)
         end
     end)
 end
