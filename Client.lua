@@ -5,7 +5,7 @@ local LocalPlayer = Players.LocalPlayer
 local tableRaceDoor = {}
 local texturePlayers = {} -- ตารางเก็บผู้เล่นที่มี Texture เป้าหมาย
 local requiredCount = 2 -- จำนวนผู้เล่นที่ต้องการ
-local debounceTime = 0.5 -- เวลาสำหรับการกดซ้ำ
+local debounceTime = 1.5 -- เวลาสำหรับการกดซ้ำ
 
 -- ฟังก์ชันสำหรับกดปุ่ม T
 local lastPressTime = 0
